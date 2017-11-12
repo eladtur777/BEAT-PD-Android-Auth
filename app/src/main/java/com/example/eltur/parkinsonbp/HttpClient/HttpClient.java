@@ -633,4 +633,54 @@ public class HttpClient {
         return list;
 
     }
+
+    public Boolean validateCredentials(Patient patient) throws IOException, JSONException{
+
+        url = new URL("http://192.168.0.171:8080/BEAT-PD/encryption-parameters");
+        initiateURLConnection("GET");
+        Gson gson = new Gson();
+        if(urlConnection.getResponseCode()==200){
+            inputStream = new BufferedInputStream(urlConnection.getInputStream());
+            String result = convertStreamToString(inputStream);
+            HashMap serverKey = gson.fromJson(result, HashMap.class);
+            String serverPubKey = (String)serverKey.get("publicKey");
+            if (serverPubKey != null && !serverPubKey.equals("")) {
+                try {
+                    String encryptMsg = RSAUtils.encryptAsString(gson.toJson(patient), serverPubKey);
+                    KeyPair clientKeyPair = RSAUtils.generateKeyPair();
+                    AuthEnc authEnc = new AuthEnc(encryptMsg, Base64.encodeBase64String(clientKeyPair.getPublic().getEncoded()));
+
+
+                    String sessionID = urlConnection.getHeaderField("Set-Cookie").split("=|;")[1];
+                    inputStream.close();
+                    urlConnection.disconnect();
+                    url = new URL("http://192.168.0.171:8080/BEAT-PD/Patient/Login");
+                    initiateURLConnection("POST");
+                    urlConnection.setRequestProperty("Cookie", "JSESSIONID=" + sessionID);
+
+                    //write the body
+                    outputStream = urlConnection.getOutputStream();
+                    outputStream.write(gson.toJson(authEnc).getBytes("UTF-8"));
+                    outputStream.close();
+
+
+                    if (urlConnection.getResponseCode() == 200) {
+                        inputStream = new BufferedInputStream(urlConnection.getInputStream());
+                        String response = (String) gson.fromJson(convertStreamToString(inputStream), HashMap.class).get("success");
+                        return (RSAUtils.decrypt(response, clientKeyPair.getPrivate()).equals("OK"));
+                    }
+                }catch (NoSuchPaddingException |NoSuchAlgorithmException |InvalidKeyException |
+                        IllegalBlockSizeException | BadPaddingException |InvalidKeySpecException e) {
+                    e.printStackTrace();
+                }
+                return false;
+            }
+        }
+        return false;
+    }
+
+    public static void main(String argd[]) throws IOException, JSONException {
+        httpClient.getClient().validateCredentials(new Patient("1234","3456"));
+    }
+
 }

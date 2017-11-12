@@ -75,11 +75,45 @@ public class LogIn extends AppCompatActivity {
                     intent.putExtra("EXTRA_SESSION_ID", UserId.getText().toString());
                     startActivity(intent);
                     finish();
+
+
+
                 }
+                //new code should be worked, replace with the up else
+//                else {
+//                    HttpClient client = HttpClient.getClient();
+//                    Patient patient = new Patient(userID,password);
+//                    try {
+//                        if(client.validateCredentials(patient)){
+//                            Intent intent = new Intent(getBaseContext(), firstpage.class);
+//                            intent.putExtra("EXTRA_SESSION_ID", UserId.getText().toString());
+//                            startActivity(intent);
+//                            finish();
+//                        }
+//                        else
+//                            loginErrorDialog();
+//                    } catch (IOException| JSONException e) {
+//                        loginErrorDialog();
+//                    }
+//                }
 
             }
         });
 
+    }
+
+    private void loginErrorDialog(){
+        AlertDialog alertDialog = new AlertDialog.Builder(LogIn.this).create();
+        alertDialog.setTitle("שגיאת מערכת");
+        alertDialog.setMessage("פרטי המשתמש לא נכונים ");
+        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        return;
+                    }
+                });
+        alertDialog.show();
     }
 
     @Override
